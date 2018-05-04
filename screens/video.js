@@ -10,7 +10,7 @@ import {
 
 export default class VideoScreen extends React.Component {
 
-    static navigationOptions = ({ navigation, navigationOptions }) => {
+    static navigationOptions = ({ navigation }) => {
         const { params } = navigation.state;
         return {
             title: params.header,
@@ -20,9 +20,7 @@ export default class VideoScreen extends React.Component {
 
     render() {
         const { params } = this.props.navigation.state;
-
         const link = params ? params.link : null;
-
         return(
             <WebView
                 source={{uri: `${link}`}}

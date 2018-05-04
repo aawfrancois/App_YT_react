@@ -6,27 +6,25 @@ import {
     View,
     TouchableOpacity,
     ScrollView,
-    AsyncStorage
+    AsyncStorage,
+    TextInput
 } from 'react-native';
+import {connect} from 'react-redux'
 import {CONFIG} from '../constants/index';
 import {Icon} from 'react-native-elements'
 
-export default class MainStack extends React.Component {
+class MainStack extends React.Component {
 
-    constructor(props) {
-        super(props)
-        this.state = {
-            video: []
-        }
+
+    state = {
+        video: [],
+        locale: "",
+        search: "",
+        isSearch: false
     }
 
-
-    video = (header, id) => {
-        let link = "https://www.youtube.com/watch?v=" + id
-        this.props.navigation.navigate("video", {header, link})
-    };
-
     static navigationOptions = ({navigation}) => {
+        const { state, setParams, navigate } = navigation;
         return {
             headerStyle: {
                 backgroundColor: '#f4511e',
@@ -43,6 +41,7 @@ export default class MainStack extends React.Component {
                     <Icon
                         name='search'
                         color='#fff'
+                        onPress={() => state.params.search()}
                     />
                     <Icon
                         name='cached'
@@ -62,30 +61,111 @@ export default class MainStack extends React.Component {
     };
 
 
-    componentDidMount() {
-        fetch(`${CONFIG.YOUTUBE.BASE_URL}/search/?key=${CONFIG.YOUTUBE.API_KEY}&chart=mostPopular&part=snippet,id&regionCode=FR&maxResults=${CONFIG.YOUTUBE.DEFAULT_NB_RESULT}`)
+    async componentDidMount() {
+        try {
+            const value = await AsyncStorage.getItem(CONFIG.STORAGE.CURRENT_REGION);
+            if (value !== null) {
+                this.setState({locale: value})
+            }
+        }
+        catch (error) {
+            console.log(error);
+        }
+
+        this.props.navigation.setParams({
+            search: this._search
+        })
+
+        let url = `${CONFIG.YOUTUBE.BASE_URL}/search?key=${CONFIG.YOUTUBE.API_KEY}&chart=mostPopular&order=rating&part=snippet&maxResults=${CONFIG.YOUTUBE.DEFAULT_NB_RESULT}`
+        if (this.state.locale) {
+            fetch(`${url}&regionCode=${this.state.locale}`)
+                .then(res => res.json())
+                .then(res => {
+                    const videoId = []
+                    res.items.forEach(item => {
+                        videoId.push(item)
+                    });
+                    this.setState({
+                        video: videoId
+                    })
+                })
+                .catch(error => {
+                    console.error(error)
+                })
+        } else {
+            fetch(`${url}&regionCode=${CONFIG.YOUTUBE.DEFAULT_REGION}`)
+                .then(res => res.json())
+                .then(res => {
+                    const videoId = []
+                    res.items.forEach(item => {
+                        videoId.push(item)
+                    })
+                    this.setState({
+                        video: videoId
+                    })
+                })
+                .catch(error => {
+                    console.error(error)
+                })
+        }
+
+
+    }
+
+    _search  = ()  => {
+        if (this.state.isSearch) {
+            this.setState({isSearch: false})
+
+        }
+        else {
+            this.setState({isSearch: true})
+        }
+    };
+
+    Buttonsearch = ( )  => {
+        fetch(`${CONFIG.YOUTUBE.BASE_URL}/search/?key=${CONFIG.YOUTUBE.API_KEY}&part=snippet,id&maxResults=${CONFIG.YOUTUBE.DEFAULT_NB_RESULT}&q=${this.state.search}`)
             .then(res => res.json())
             .then(res => {
-                const videoId = []
+                const video = []
                 res.items.forEach(item => {
-                    videoId.push(item)
+                    video.push(item)
                 })
                 this.setState({
-                    video: videoId
+                    video: video
                 })
             })
             .catch(error => {
                 console.error(error)
             })
+    };
+
+    _toggleSearch(){
+        if (this.state.isSearch) {
+            return (
+                <TextInput
+                    style={{height: 40, borderColor: 'red', borderWidth: 1}}
+                    onChangeText={(search) => this.setState({search})}
+                    value={this.state.text}
+                    onEndEditing={() => this.Buttonsearch( )}
+                    placeholder = "Recherchez"
+                />
+            )
+        }
     }
+
+    video = (header, id) => {
+        let link = "https://www.youtube.com/watch?v=" + id
+        this.props.navigation.navigate("video", {header, link})
+    };
 
 
     render() {
-        const {navigate} = this.props.navigation
         return (
             <View style={styles.container}>
+                {this._toggleSearch()}
                 <ScrollView>
                     <View style={styles.body}>
+                        <Text style={styles.title}>Video populaire : {this.state.locale}</Text>
                         {this.state.video.map((item) =>
                             <TouchableOpacity
                                 key={item.id.videoId}
@@ -95,8 +175,6 @@ export default class MainStack extends React.Component {
                                         source={{uri: item.snippet.thumbnails.medium.url}}
                                         style={{width: 320, height: 180}}/>
                                     <View style={styles.vidItems}>
-                                        <Image
-                                            style={{width: 40, height: 40, borderRadius: 20, marginRight: 5}}/>
                                         <Text style={styles.vidText}>{item.snippet.title}</Text>
                                     </View>
                                 </View>
@@ -115,6 +193,9 @@ export default class MainStack extends React.Component {
 const styles = StyleSheet.create({
     container: {
         flex: 1
+    },
+    title: {
+        margin: 10,
     },
     body: {
         flex: 1,
@@ -161,3 +242,12 @@ const styles = StyleSheet.create({
         textDecorationLine: 'underline'
     }
 })
+
+function mapStateToProps(state) {
+    return {
+        country: state.country,
+        locale: state.locale
+    }
+}
+
+export default connect(mapStateToProps)(MainStack)
