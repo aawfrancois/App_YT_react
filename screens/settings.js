@@ -26,12 +26,13 @@ class SettingsScreen extends React.Component {
         this.setState({
             country: Country
         })
-        AsyncStorage.setItem('@availabe_regions', Country);
+        AsyncStorage.setItem(CONFIG.STORAGE.AVAILABLE_REGIONS, Country);
     };
+
 
     updateLocale = (locale) => {
         this.setState({ locale: locale })
-        AsyncStorage.setItem('@current_region', locale);
+        AsyncStorage.setItem(CONFIG.STORAGE.CURRENT_REGION, locale);
     };
 
     componentDidMount(){
@@ -53,9 +54,6 @@ class SettingsScreen extends React.Component {
     }
 
     render() {
-        if (CONFIG.STORAGE.AVAILABLE_REGIONS) {
-
-        }
         const items = this.state.country.map((item) => {
             return(
                 <Picker.Item label={item.snippet.name} value={item.snippet.gl} />

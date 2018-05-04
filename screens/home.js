@@ -24,7 +24,7 @@ class MainStack extends React.Component {
     }
 
     static navigationOptions = ({navigation}) => {
-        const { state, setParams, navigate } = navigation;
+        const { state } = navigation;
         return {
             headerStyle: {
                 backgroundColor: '#f4511e',
@@ -115,7 +115,6 @@ class MainStack extends React.Component {
     _search  = ()  => {
         if (this.state.isSearch) {
             this.setState({isSearch: false})
-
         }
         else {
             this.setState({isSearch: true})
